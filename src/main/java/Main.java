@@ -4,10 +4,11 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -18,9 +19,12 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
-import java.net.URL;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Optional;
 
-/** JavaFX shell for the photo editor. Image processing is added in later steps. */
+/** JavaFX application for the photo editor. */
 public class Main extends Application {
 
     // Codex was used for the initial javafx implementation.
@@ -28,6 +32,8 @@ public class Main extends Application {
 
     private final ImageView imageView = new ImageView();
     private final Label statusLabel = new Label("Ready");
+    private final Button saveButton = new Button("Save image");
+    private ImageDocument document;
 
     @Override
     public void start(Stage stage) {
@@ -47,9 +53,8 @@ public class Main extends Application {
         Button openButton = new Button("Open image");
         openButton.setOnAction(event -> openImage(stage));
 
-        Button saveButton = new Button("Save image");
-        //saveButton.setDisable(true);
-        saveButton.setOnAction(event -> System.out.println("Save Image Pressed"));
+        saveButton.setDisable(true);
+        saveButton.setOnAction(event -> saveImage(stage));
 
         Slider zoomSlider = new Slider(0.5, 2.0, 1.0);
         zoomSlider.setShowTickLabels(true);
@@ -109,14 +114,35 @@ public class Main extends Application {
     }
 
     private void loadDefaultImage() {
-        URL resource = Main.class.getResource(DEFAULT_IMAGE);
-        if (resource == null) {
+        try (var input = Main.class.getResourceAsStream(DEFAULT_IMAGE)) {
+            if (input == null) {
+                statusLabel.setText("Default image not found");
+                return;
+            }
+
+            replaceDocument(ImageDocument.open(input, DEFAULT_IMAGE));
+            statusLabel.setText("Loaded sample image");
+        } catch (IOException | RuntimeException exception) {
+            statusLabel.setText("Could not load sample image: " + exception.getMessage());
+        }
+    }
+
+    private void replaceDocument(ImageDocument nextDocument) {
+        if (document != null) {
+            document.close();
+        }
+        document = nextDocument;
+        saveButton.setDisable(false);
+        refreshPreview();
+    }
+
+    private void refreshPreview() {
+        if (document == null) {
             statusLabel.setText("Default image not found");
             return;
         }
 
-        imageView.setImage(new Image(resource.toExternalForm()));
-        statusLabel.setText("Loaded sample image");
+        imageView.setImage(ImageProcessor.toFxImage(document.processedImage()));
     }
 
     private void openImage(Stage stage) {
@@ -130,8 +156,59 @@ public class Main extends Application {
             return;
         }
 
-        imageView.setImage(new Image(selectedFile.toURI().toString()));
-        statusLabel.setText("Loaded " + selectedFile.getName());
+        try {
+            replaceDocument(ImageDocument.open(selectedFile.toPath()));
+            statusLabel.setText("Loaded " + selectedFile.getName());
+        } catch (IOException | RuntimeException exception) {
+            statusLabel.setText("Could not load image: " + exception.getMessage());
+        }
+    }
+
+    private void saveImage(Stage stage) {
+        if (document == null) {
+            statusLabel.setText("No image is loaded");
+            return;
+        }
+
+        Path outputPath = document.suggestedEditPath();
+        if (outputPath == null) {
+            FileChooser chooser = new FileChooser();
+            chooser.setTitle("Save edited image");
+            chooser.setInitialFileName(document.suggestedEditFileName());
+            chooser.getExtensionFilters().add(
+                    new FileChooser.ExtensionFilter("Image files", "*.png", "*.jpg", "*.jpeg", "*.bmp"));
+
+            File selectedFile = chooser.showSaveDialog(stage);
+            if (selectedFile == null) {
+                return;
+            }
+            outputPath = selectedFile.toPath();
+        }
+
+        if (Files.exists(outputPath) && !confirmOverwrite(stage, outputPath)) {
+            statusLabel.setText("Save cancelled");
+            return;
+        }
+
+        try {
+            document.saveTo(outputPath);
+            statusLabel.setText("Saved " + outputPath.getFileName());
+        } catch (IOException | RuntimeException exception) {
+            statusLabel.setText("Could not save image: " + exception.getMessage());
+        }
+    }
+
+    private boolean confirmOverwrite(Stage owner, Path outputPath) {
+        Alert alert = new Alert(
+                Alert.AlertType.CONFIRMATION,
+                "The file " + outputPath.getFileName() + " already exists. Overwrite it?",
+                ButtonType.CANCEL,
+                ButtonType.OK);
+        alert.initOwner(owner);
+        alert.setTitle("Confirm overwrite");
+        alert.setHeaderText("Edited image already exists");
+        Optional<ButtonType> result = alert.showAndWait();
+        return result.orElse(ButtonType.CANCEL) == ButtonType.OK;
     }
 
     public static void main(String[] args) {
