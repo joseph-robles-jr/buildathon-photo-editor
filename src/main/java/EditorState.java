@@ -1,6 +1,5 @@
 /**
  * Immutable values that describe how the current image should be previewed.
- *
  * Crop and exposure fields are included now so later UI controls can update one
  * state object instead of passing unrelated values through the application.
  */
