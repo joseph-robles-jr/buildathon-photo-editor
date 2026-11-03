@@ -10,6 +10,10 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.scene.Cursor; // This allows for thr dragging.
 
+import javafx.geometry.Rectangle2D;
+import javafx.stage.Screen;
+
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -53,8 +57,8 @@ public class Main extends Application {
         scrollPane.setFitToHeight(true);
 
         //Scrollbar on when scale large.
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        // scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        // scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 
         //Dragable Image Logic
 
@@ -67,8 +71,15 @@ public class Main extends Application {
 
 
         // We should look at grabbing screen size from OS and then make these a ratio instead of hardcoded.
-        imageView.setFitWidth(760);
-        imageView.setFitHeight(560);
+
+        Rectangle2D visualBounds = Screen.getPrimary().getVisualBounds();
+
+        double screenWidth = visualBounds.getWidth();
+        double screenHeight = visualBounds.getHeight();
+
+
+        imageView.setFitWidth(screenWidth);
+        imageView.setFitHeight(screenHeight);
 
         /* //The old way of displaying. Has image bound problems. Was replaced with scrollPane.
         VBox preview = new VBox(imageView);
