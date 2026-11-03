@@ -110,6 +110,10 @@ public final class ImageProcessor {
     }
 
     private static void normalizeToBgr(Mat source, Mat destination) {
+
+        //Uses The color streasms to determine if we need to convert to RGB (3 color)
+        // This method was made by ChatGPT Codex.
+        // This method was made by ChatGPT Codex.
         switch (source.channels()) {
             case 1 -> Imgproc.cvtColor(source, destination, Imgproc.COLOR_GRAY2BGR);
             case 3 -> source.copyTo(destination);

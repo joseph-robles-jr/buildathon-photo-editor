@@ -7,7 +7,7 @@ import java.nio.file.Path;
 
 import org.opencv.imgcodecs.Imgcodecs;
 
-/** Owns the source image and the currently rendered preview. */
+
 public final class ImageDocument implements AutoCloseable {
 
     private final Mat original;
