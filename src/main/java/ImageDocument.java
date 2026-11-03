@@ -43,6 +43,14 @@ public final class ImageDocument implements AutoCloseable {
         return state;
     }
 
+    public int originalWidth() {
+        return original.cols();
+    }
+
+    public int originalHeight() {
+        return original.rows();
+    }
+
     public String suggestedEditFileName() {
         int extensionStart = sourceName.lastIndexOf('.');
         if (extensionStart <= 0) {
@@ -74,6 +82,14 @@ public final class ImageDocument implements AutoCloseable {
     }
 
     public void updateState(EditorState newState) {
+        if (newState == null) {
+            throw new IllegalArgumentException("Editor state must not be null");
+        }
+        if (state.hasSameProcessingValues(newState)) {
+            state = newState;
+            return;
+        }
+
         Mat nextProcessed = ImageProcessor.render(original, newState);
         processed.release();
         processed = nextProcessed;

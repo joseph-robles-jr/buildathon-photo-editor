@@ -12,7 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /** OpenCV operations used by the photo editor. */
-public final class  ImageProcessor {
+public final class ImageProcessor {
 
     private ImageProcessor() {
     }

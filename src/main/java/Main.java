@@ -3,18 +3,9 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-import javafx.scene.control.Label;
-import javafx.scene.control.Slider;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -33,6 +24,14 @@ public class Main extends Application {
     private final ImageView imageView = new ImageView();
     private final Label statusLabel = new Label("Ready");
     private final Button saveButton = new Button("Save image");
+    private final Slider zoomSlider = new Slider(0.5, 2.0, 1.0);
+    private final Label zoomValueLabel = new Label("100%");
+    private final TextField cropWidthField = new TextField();
+    private final TextField cropHeightField = new TextField();
+    private final Button applyCropButton = new Button("Apply crop");
+    private final Slider exposureSlider = new Slider(-100, 100, 0);
+    private final Label exposureValueLabel = new Label("0");
+    private final Button resetButton = new Button("Reset");
     private ImageDocument document;
 
     @Override
@@ -41,45 +40,61 @@ public class Main extends Application {
 
         imageView.setPreserveRatio(true);
         imageView.setSmooth(true);
+
+        StackPane imageCanvas = new StackPane(imageView);
+        imageCanvas.setAlignment(Pos.CENTER);
+        imageCanvas.setStyle("-fx-background-color: #20242b;");
+
+        ScrollPane scrollPane = new ScrollPane(imageCanvas);
+        scrollPane.setPannable(true);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true);
+
+        //Scrollbar on when scale large.
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+
+
+
         // We should look at grabbing screen size from OS and then make these a ratio instead of hardcoded.
         imageView.setFitWidth(760);
         imageView.setFitHeight(560);
 
+        /* //The old way of displaying. Has image bound problems. Was replaced with scrollPane.
         VBox preview = new VBox(imageView);
         preview.setAlignment(Pos.CENTER);
         preview.setPadding(new Insets(24));
         preview.setStyle("-fx-background-color: #20242b;");
 
+        */
         Button openButton = new Button("Open image");
         openButton.setOnAction(event -> openImage(stage));
 
         saveButton.setDisable(true);
         saveButton.setOnAction(event -> saveImage(stage));
 
-        Slider zoomSlider = new Slider(0.5, 2.0, 1.0);
+        zoomSlider.setBlockIncrement(0.1);
         zoomSlider.setShowTickLabels(true);
         zoomSlider.setShowTickMarks(true);
-        zoomSlider.setDisable(true);
-
-        TextField cropWidth = new TextField();
-        cropWidth.setPromptText("Width");
-        cropWidth.setPrefColumnCount(6);
-        cropWidth.setDisable(true);
-
-        TextField cropHeight = new TextField();
-        cropHeight.setPromptText("Height");
-        cropHeight.setPrefColumnCount(6);
-        cropHeight.setDisable(true);
-
-        Slider exposureSlider = new Slider(-100, 100, 0);
         exposureSlider.setShowTickLabels(true);
         exposureSlider.setShowTickMarks(true);
-        //exposureSlider.setDisable(true);
+
+        cropWidthField.setPromptText("Width");
+        cropWidthField.setPrefColumnCount(6);
+        cropHeightField.setPromptText("Height");
+        cropHeightField.setPrefColumnCount(6);
+        applyCropButton.setOnAction(event -> applyCrop());
+
+        zoomSlider.valueProperty().addListener((observable, oldValue, newValue) -> updateZoom(newValue.doubleValue()));
+        exposureSlider.valueProperty().addListener(
+                (observable, oldValue, newValue) -> updateExposure(newValue.doubleValue()));
+        resetButton.setOnAction(event -> resetEditor());
 
         Slider redactionSlider = new Slider(-100, 100, 0);
         redactionSlider.setShowTickMarks(true);
         redactionSlider.setShowTickLabels(true);
         redactionSlider.setSnapToTicks(true);
+        redactionSlider.setDisable(true);
 
 
         Region spacer = new Region();
@@ -87,19 +102,29 @@ public class Main extends Application {
 
         VBox controls = new VBox(14,
                 section("File", new HBox(8, openButton, saveButton)),
-                section("Zoom", zoomSlider),
-                section("Crop dimensions", new HBox(8, cropWidth, cropHeight)),
-                section("Exposure", exposureSlider),
+                section("Zoom", new HBox(8, zoomSlider, zoomValueLabel)),
+                section("Crop dimensions", new VBox(8,
+                        new HBox(8, cropWidthField, cropHeightField), applyCropButton)),
+                section("Exposure", new HBox(8, exposureSlider, exposureValueLabel)),
                 section("Redaction",  redactionSlider),
                 spacer,
+                new HBox(8, resetButton),
                 statusLabel);
         controls.setPadding(new Insets(20));
         controls.setPrefWidth(260);
 
-        BorderPane root = new BorderPane(preview);
+        /* Builds the preview window into the borderPane. Dead Code.*/
+        // BorderPane root = new BorderPane(preview);
+        // root.setCenter(scrollPane); //This is where the image lives. Using scrollPlane prevents image from overflowing into the control section when zoomed.
+        // root.setRight(controls);
+        // root.setStyle("-fx-font-size: 13px;");
+
+        BorderPane root = new BorderPane();
+        root.setCenter(scrollPane); //This is where the image lives. Using scrollPlane prevents image from overflowing into the control section when zoomed.
         root.setRight(controls);
         root.setStyle("-fx-font-size: 13px;");
 
+        setEditorControlsEnabled(false);
         loadDefaultImage();
 
         Scene scene = new Scene(root, 1120, 720);
@@ -133,6 +158,8 @@ public class Main extends Application {
         }
         document = nextDocument;
         saveButton.setDisable(false);
+        setEditorControlsEnabled(true);
+        resetControls();
         refreshPreview();
     }
 
@@ -143,6 +170,101 @@ public class Main extends Application {
         }
 
         imageView.setImage(ImageProcessor.toFxImage(document.processedImage()));
+    }
+
+    private void updateZoom(double zoom) {
+        imageView.setScaleX(zoom);
+        imageView.setScaleY(zoom);
+        zoomValueLabel.setText(String.format("%.0f%%", zoom * 100));
+        if (document != null) {
+            document.updateState(document.state().withZoom(zoom));
+        }
+    }
+
+    private void updateExposure(double exposure) {
+        exposureValueLabel.setText(String.format("%.0f", exposure));
+        if (document == null) {
+            return;
+        }
+
+        try {
+            document.updateState(document.state().withExposure(exposure));
+            refreshPreview();
+        } catch (RuntimeException exception) {
+            statusLabel.setText("Could not apply exposure: " + exception.getMessage());
+        }
+    }
+
+    private void applyCrop() {
+        if (document == null) {
+            statusLabel.setText("No image is loaded");
+            return;
+        }
+
+        try {
+            int width = parsePositiveInteger(cropWidthField, "Crop width");
+            int height = parsePositiveInteger(cropHeightField, "Crop height");
+            if (width > document.originalWidth() || height > document.originalHeight()) {
+                throw new IllegalArgumentException("Crop dimensions cannot exceed the original image");
+            }
+
+            int x = (document.originalWidth() - width) / 2;
+            int y = (document.originalHeight() - height) / 2;
+            document.updateState(document.state().withCrop(x, y, width, height));
+            refreshPreview();
+            statusLabel.setText("Applied centered crop: " + width + " x " + height);
+        } catch (IllegalArgumentException exception) {
+            statusLabel.setText(exception.getMessage());
+        }
+    }
+
+    private int parsePositiveInteger(TextField field, String fieldName) {
+        String value = field.getText().trim();
+        if (value.isEmpty()) {
+            throw new IllegalArgumentException(fieldName + " is required");
+        }
+
+        try {
+            int parsed = Integer.parseInt(value);
+            if (parsed <= 0) {
+                throw new IllegalArgumentException(fieldName + " must be greater than zero");
+            }
+            return parsed;
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException(fieldName + " must be a whole number");
+        }
+    }
+
+    private void resetEditor() {
+        if (document == null) {
+            statusLabel.setText("No image is loaded");
+            return;
+        }
+
+        document.reset();
+        resetControls();
+        refreshPreview();
+        statusLabel.setText("Reset to original image");
+    }
+
+    private void resetControls() {
+        zoomSlider.setValue(1.0);
+        exposureSlider.setValue(0.0);
+        cropWidthField.clear();
+        cropHeightField.clear();
+        imageView.setScaleX(1.0);
+        imageView.setScaleY(1.0);
+        zoomValueLabel.setText("100%");
+        exposureValueLabel.setText("0");
+    }
+
+    private void setEditorControlsEnabled(boolean enabled) {
+        zoomSlider.setDisable(!enabled);
+        cropWidthField.setDisable(!enabled);
+        cropHeightField.setDisable(!enabled);
+        applyCropButton.setDisable(!enabled);
+        exposureSlider.setDisable(!enabled);
+        resetButton.setDisable(!enabled);
     }
 
     private void openImage(Stage stage) {

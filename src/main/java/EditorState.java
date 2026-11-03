@@ -30,4 +30,24 @@ public record EditorState(
     public boolean hasCrop() {
         return cropWidth > 0 && cropHeight > 0;
     }
+
+    public EditorState withZoom(double newZoom) {
+        return new EditorState(newZoom, cropX, cropY, cropWidth, cropHeight, exposure);
+    }
+
+    public EditorState withCrop(int newCropX, int newCropY, int newCropWidth, int newCropHeight) {
+        return new EditorState(zoom, newCropX, newCropY, newCropWidth, newCropHeight, exposure);
+    }
+
+    public EditorState withExposure(double newExposure) {
+        return new EditorState(zoom, cropX, cropY, cropWidth, cropHeight, newExposure);
+    }
+
+    public boolean hasSameProcessingValues(EditorState other) {
+        return cropX == other.cropX
+                && cropY == other.cropY
+                && cropWidth == other.cropWidth
+                && cropHeight == other.cropHeight
+                && Double.compare(exposure, other.exposure) == 0;
+    }
 }
