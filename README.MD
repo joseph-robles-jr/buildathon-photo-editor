@@ -1,15 +1,28 @@
 
+# README
+
+This is a simple photo editor that handles exposure adjustments, RGB level changes, and a simple crop.
 
 AI was used to help handle null safety, JavaFX setup, and research with OpenCV and to clean up my code.
-(ChatGPT & Gemini)
+(ChatGPT & Gemini).
 
-Video:
+## Video:
 [![Photo Editor Walkthrough](https://img.youtube.com/vi/VPX40LNpuQg/0.jpg)](https://youtu.be/VPX40LNpuQg)
 
 
-This is a simple photo editor that handles exposure adjustments, RGB level changes, and a simple crop.
-## Build
+
+
+
+## Build & Run
+
+Prerequisites
+<li>Maven</li>
+<li>Java jdk 25 (Amazon Corretto was used for development)</li>
+<li>An Internet Connection</li>
+
+
 From the root of the project, run:
+
 ```bash
 mvn install
 mvn compile
