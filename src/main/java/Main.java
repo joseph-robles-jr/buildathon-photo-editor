@@ -62,7 +62,7 @@ public class Main extends Application {
         scrollPane.setFitToWidth(true);
         scrollPane.setFitToHeight(true);
 
-        //Scrollbar on when scale large.
+        //Scrollbar on when scale large. needs more work
         // scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         // scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 
@@ -72,7 +72,6 @@ public class Main extends Application {
                 scrollPane.setCursor(Cursor.CLOSED_HAND));
         scrollPane.setOnMouseReleased (event ->
                 scrollPane.setCursor(Cursor.MOVE));
-
 
 
 
@@ -123,11 +122,8 @@ public class Main extends Application {
         blueSlider.valueProperty().addListener((observable, oldValue, newValue) -> updateColorAdjustments());
         resetButton.setOnAction(event -> resetEditor());
 
-        Slider redactionSlider = new Slider(-100, 100, 0);
-        redactionSlider.setShowTickMarks(true);
-        redactionSlider.setShowTickLabels(true);
-        redactionSlider.setSnapToTicks(true);
-        redactionSlider.setDisable(true);
+
+
 
 
         Region spacer = new Region();
@@ -143,7 +139,6 @@ public class Main extends Application {
                         colorControl("Red", redSlider, redValueLabel),
                         colorControl("Green", greenSlider, greenValueLabel),
                         colorControl("Blue", blueSlider, blueValueLabel))),
-                section("Redaction",  redactionSlider),
                 spacer,
                 new HBox(8, resetButton),
                 statusLabel);
