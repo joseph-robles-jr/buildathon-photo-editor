@@ -8,6 +8,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.scene.Cursor; // This allows for thr dragging.
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-/** JavaFX application for the photo editor. */
+/** JavaFX application for the photo editor. MUST be in Main. */
 public class Main extends Application {
 
     // Codex was used for the initial javafx implementation.
@@ -47,12 +48,21 @@ public class Main extends Application {
 
         ScrollPane scrollPane = new ScrollPane(imageCanvas);
         scrollPane.setPannable(true);
+        scrollPane.setCursor(Cursor.MOVE);
         scrollPane.setFitToWidth(true);
         scrollPane.setFitToHeight(true);
 
         //Scrollbar on when scale large.
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+
+        //Dragable Image Logic
+
+        scrollPane.setOnMousePressed (event ->
+                scrollPane.setCursor(Cursor.CLOSED_HAND));
+        scrollPane.setOnMouseReleased (event ->
+                scrollPane.setCursor(Cursor.MOVE));
+
 
 
 
