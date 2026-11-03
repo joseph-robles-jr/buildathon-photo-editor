@@ -25,7 +25,7 @@ public class Main extends Application {
     private final ImageView imageView = new ImageView();
     private final Label statusLabel = new Label("Ready");
     private final Button saveButton = new Button("Save image");
-    private final Slider zoomSlider = new Slider(0.5, 2.0, 1.0);
+    private final Slider zoomSlider = new Slider(0.5, 4.0, 1.0);
     private final Label zoomValueLabel = new Label("100%");
     private final TextField cropWidthField = new TextField();
     private final TextField cropHeightField = new TextField();

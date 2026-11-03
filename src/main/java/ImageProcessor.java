@@ -59,23 +59,28 @@ public final class ImageProcessor {
     public static Image toFxImage(Mat bgrImage) {
         requireImage(bgrImage, "preview image");
 
-        Mat rgbImage = new Mat();
+        byte[] bytes = encodeForPreview(bgrImage);
+        Image image = new Image(new ByteArrayInputStream(bytes));
+        if (image.isError()) {
+            throw new IllegalStateException("JavaFX could not decode the preview image", image.getException());
+        }
+        return image;
+    }
+
+    static byte[] encodeForPreview(Mat bgrImage) {
+        requireImage(bgrImage, "preview image");
+
+        Mat normalizedBgr = new Mat();
         MatOfByte encoded = new MatOfByte();
         try {
-            convertToRgb(bgrImage, rgbImage);
-            if (!Imgcodecs.imencode(".png", rgbImage, encoded)) {
+            normalizeToBgr(bgrImage, normalizedBgr);
+            if (!Imgcodecs.imencode(".png", normalizedBgr, encoded)) {
                 throw new IllegalStateException("OpenCV could not encode the preview image");
             }
-
-            byte[] bytes = encoded.toArray();
-            Image image = new Image(new ByteArrayInputStream(bytes));
-            if (image.isError()) {
-                throw new IllegalStateException("JavaFX could not decode the preview image", image.getException());
-            }
-            return image;
+            return encoded.toArray();
         } finally {
             encoded.release();
-            rgbImage.release();
+            normalizedBgr.release();
         }
     }
 
@@ -94,11 +99,11 @@ public final class ImageProcessor {
         }
     }
 
-    private static void convertToRgb(Mat source, Mat destination) {
+    private static void normalizeToBgr(Mat source, Mat destination) {
         switch (source.channels()) {
-            case 1 -> Imgproc.cvtColor(source, destination, Imgproc.COLOR_GRAY2RGB);
-            case 3 -> Imgproc.cvtColor(source, destination, Imgproc.COLOR_BGR2RGB);
-            case 4 -> Imgproc.cvtColor(source, destination, Imgproc.COLOR_BGRA2RGBA);
+            case 1 -> Imgproc.cvtColor(source, destination, Imgproc.COLOR_GRAY2BGR);
+            case 3 -> source.copyTo(destination);
+            case 4 -> Imgproc.cvtColor(source, destination, Imgproc.COLOR_BGRA2BGR);
             default -> throw new IllegalArgumentException(
                     "Unsupported image channel count: " + source.channels());
         }

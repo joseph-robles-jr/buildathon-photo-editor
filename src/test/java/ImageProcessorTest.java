@@ -58,6 +58,28 @@ class ImageProcessorTest {
     }
 
     @Test
+    void previewEncodingPreservesRedAndBlueChannelOrder() {
+        // OpenCV stores this as B=10, G=20, R=200.
+        Mat original = new Mat(1, 1, CvType.CV_8UC3, new Scalar(10, 20, 200));
+        MatOfByte encoded = new MatOfByte(ImageProcessor.encodeForPreview(original));
+        try {
+            Mat decoded = Imgcodecs.imdecode(encoded, Imgcodecs.IMREAD_COLOR);
+            try {
+                double[] pixel = decoded.get(0, 0);
+
+                assertEquals(10, pixel[0]);
+                assertEquals(20, pixel[1]);
+                assertEquals(200, pixel[2]);
+            } finally {
+                decoded.release();
+            }
+        } finally {
+            encoded.release();
+            original.release();
+        }
+    }
+
+    @Test
     void renderRejectsCropOutsideImageBounds() {
         Mat original = new Mat(10, 20, CvType.CV_8UC3, new Scalar(10, 20, 30));
         try {
