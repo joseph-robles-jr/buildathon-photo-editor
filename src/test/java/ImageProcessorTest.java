@@ -58,6 +58,25 @@ class ImageProcessorTest {
     }
 
     @Test
+    void redAdjustmentChangesOnlyTheRedChannel() {
+        Mat original = new Mat(1, 1, CvType.CV_8UC3, new Scalar(10, 20, 30));
+        try {
+            EditorState state = new EditorState(1.0, 0, 0, 0, 0, 0.0, 40.0, 0.0, 0.0);
+            Mat result = ImageProcessor.render(original, state);
+            try {
+                double[] pixel = result.get(0, 0);
+                assertEquals(10, pixel[0]);
+                assertEquals(20, pixel[1]);
+                assertEquals(70, pixel[2]);
+            } finally {
+                result.release();
+            }
+        } finally {
+            original.release();
+        }
+    }
+
+    @Test
     void previewEncodingPreservesRedAndBlueChannelOrder() {
         // OpenCV stores this as B=10, G=20, R=200.
         Mat original = new Mat(1, 1, CvType.CV_8UC3, new Scalar(10, 20, 200));

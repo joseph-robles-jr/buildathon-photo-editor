@@ -1,7 +1,9 @@
 import javafx.scene.image.Image;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfByte;
 import org.opencv.core.Rect;
+import org.opencv.core.Scalar;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
@@ -45,6 +47,14 @@ public final class ImageProcessor {
             if (state.exposure() != 0.0) {
                 Mat adjusted = new Mat();
                 result.convertTo(adjusted, -1, 1.0, state.exposure());
+                result.release();
+                result = adjusted;
+            }
+
+            if (state.red() != 0.0 || state.green() != 0.0 || state.blue() != 0.0) {
+                Mat adjusted = new Mat();
+                // OpenCV stores 3-channel images as BGR, so the scalar is blue, green, red.
+                Core.add(result, new Scalar(state.blue(), state.green(), state.red()), adjusted);
                 result.release();
                 result = adjusted;
             }

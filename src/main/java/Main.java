@@ -36,6 +36,12 @@ public class Main extends Application {
     private final Button applyCropButton = new Button("Apply crop");
     private final Slider exposureSlider = new Slider(-100, 100, 0);
     private final Label exposureValueLabel = new Label("0");
+    private final Slider redSlider = new Slider(-100, 100, 0);
+    private final Slider greenSlider = new Slider(-100, 100, 0);
+    private final Slider blueSlider = new Slider(-100, 100, 0);
+    private final Label redValueLabel = new Label("0");
+    private final Label greenValueLabel = new Label("0");
+    private final Label blueValueLabel = new Label("0");
     private final Button resetButton = new Button("Reset");
     private ImageDocument document;
 
@@ -99,6 +105,9 @@ public class Main extends Application {
         zoomSlider.setShowTickMarks(true);
         exposureSlider.setShowTickLabels(true);
         exposureSlider.setShowTickMarks(true);
+        configureColorSlider(redSlider);
+        configureColorSlider(greenSlider);
+        configureColorSlider(blueSlider);
 
         cropWidthField.setPromptText("Width");
         cropWidthField.setPrefColumnCount(6);
@@ -109,6 +118,9 @@ public class Main extends Application {
         zoomSlider.valueProperty().addListener((observable, oldValue, newValue) -> updateZoom(newValue.doubleValue()));
         exposureSlider.valueProperty().addListener(
                 (observable, oldValue, newValue) -> updateExposure(newValue.doubleValue()));
+        redSlider.valueProperty().addListener((observable, oldValue, newValue) -> updateColorAdjustments());
+        greenSlider.valueProperty().addListener((observable, oldValue, newValue) -> updateColorAdjustments());
+        blueSlider.valueProperty().addListener((observable, oldValue, newValue) -> updateColorAdjustments());
         resetButton.setOnAction(event -> resetEditor());
 
         Slider redactionSlider = new Slider(-100, 100, 0);
@@ -127,6 +139,10 @@ public class Main extends Application {
                 section("Crop dimensions", new VBox(8,
                         new HBox(8, cropWidthField, cropHeightField), applyCropButton)),
                 section("Exposure", new HBox(8, exposureSlider, exposureValueLabel)),
+                section("Color", new VBox(8,
+                        colorControl("Red", redSlider, redValueLabel),
+                        colorControl("Green", greenSlider, greenValueLabel),
+                        colorControl("Blue", blueSlider, blueValueLabel))),
                 section("Redaction",  redactionSlider),
                 spacer,
                 new HBox(8, resetButton),
@@ -216,6 +232,26 @@ public class Main extends Application {
         }
     }
 
+    private void updateColorAdjustments() {
+        double red = redSlider.getValue();
+        double green = greenSlider.getValue();
+        double blue = blueSlider.getValue();
+        redValueLabel.setText(String.format("%.0f", red));
+        greenValueLabel.setText(String.format("%.0f", green));
+        blueValueLabel.setText(String.format("%.0f", blue));
+
+        if (document == null) {
+            return;
+        }
+
+        try {
+            document.updateState(document.state().withColorAdjustments(red, green, blue));
+            refreshPreview();
+        } catch (RuntimeException exception) {
+            statusLabel.setText("Could not apply color adjustment: " + exception.getMessage());
+        }
+    }
+
     private void applyCrop() {
         if (document == null) {
             statusLabel.setText("No image is loaded");
@@ -271,12 +307,18 @@ public class Main extends Application {
     private void resetControls() {
         zoomSlider.setValue(1.0);
         exposureSlider.setValue(0.0);
+        redSlider.setValue(0.0);
+        greenSlider.setValue(0.0);
+        blueSlider.setValue(0.0);
         cropWidthField.clear();
         cropHeightField.clear();
         imageView.setScaleX(1.0);
         imageView.setScaleY(1.0);
         zoomValueLabel.setText("100%");
         exposureValueLabel.setText("0");
+        redValueLabel.setText("0");
+        greenValueLabel.setText("0");
+        blueValueLabel.setText("0");
     }
 
     private void setEditorControlsEnabled(boolean enabled) {
@@ -285,7 +327,22 @@ public class Main extends Application {
         cropHeightField.setDisable(!enabled);
         applyCropButton.setDisable(!enabled);
         exposureSlider.setDisable(!enabled);
+        redSlider.setDisable(!enabled);
+        greenSlider.setDisable(!enabled);
+        blueSlider.setDisable(!enabled);
         resetButton.setDisable(!enabled);
+    }
+
+    private void configureColorSlider(Slider slider) {
+        slider.setBlockIncrement(10);
+        slider.setShowTickLabels(true);
+        slider.setShowTickMarks(true);
+    }
+
+    private HBox colorControl(String name, Slider slider, Label valueLabel) {
+        Label nameLabel = new Label(name);
+        nameLabel.setPrefWidth(45);
+        return new HBox(6, nameLabel, slider, valueLabel);
     }
 
     private void openImage(Stage stage) {

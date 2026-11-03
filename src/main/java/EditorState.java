@@ -9,7 +9,20 @@ public record EditorState(
         int cropY,
         int cropWidth,
         int cropHeight,
-        double exposure) {
+        double exposure,
+        double red,
+        double green,
+        double blue) {
+
+    public EditorState(
+            double zoom,
+            int cropX,
+            int cropY,
+            int cropWidth,
+            int cropHeight,
+            double exposure) {
+        this(zoom, cropX, cropY, cropWidth, cropHeight, exposure, 0.0, 0.0, 0.0);
+    }
 
     public EditorState {
         if (!Double.isFinite(zoom) || zoom <= 0) {
@@ -18,13 +31,16 @@ public record EditorState(
         if (!Double.isFinite(exposure)) {
             throw new IllegalArgumentException("Exposure must be finite");
         }
+        if (!Double.isFinite(red) || !Double.isFinite(green) || !Double.isFinite(blue)) {
+            throw new IllegalArgumentException("Color adjustments must be finite");
+        }
         if (cropX < 0 || cropY < 0 || cropWidth < 0 || cropHeight < 0) {
             throw new IllegalArgumentException("Crop values cannot be negative");
         }
     }
 
     public static EditorState defaults() {
-        return new EditorState(1.0, 0, 0, 0, 0, 0.0);
+        return new EditorState(1.0, 0, 0, 0, 0, 0.0, 0.0, 0.0, 0.0);
     }
 
     public boolean hasCrop() {
@@ -32,15 +48,24 @@ public record EditorState(
     }
 
     public EditorState withZoom(double newZoom) {
-        return new EditorState(newZoom, cropX, cropY, cropWidth, cropHeight, exposure);
+        return new EditorState(newZoom, cropX, cropY, cropWidth, cropHeight,
+                exposure, red, green, blue);
     }
 
     public EditorState withCrop(int newCropX, int newCropY, int newCropWidth, int newCropHeight) {
-        return new EditorState(zoom, newCropX, newCropY, newCropWidth, newCropHeight, exposure);
+        return new EditorState(zoom,
+                newCropX, newCropY, newCropWidth, newCropHeight,
+                exposure, red, green, blue);
     }
 
     public EditorState withExposure(double newExposure) {
-        return new EditorState(zoom, cropX, cropY, cropWidth, cropHeight, newExposure);
+        return new EditorState(zoom, cropX, cropY, cropWidth, cropHeight,
+                newExposure, red, green, blue);
+    }
+
+    public EditorState withColorAdjustments(double newRed, double newGreen, double newBlue) {
+        return new EditorState(zoom, cropX, cropY, cropWidth, cropHeight,
+                exposure, newRed, newGreen, newBlue);
     }
 
     public boolean hasSameProcessingValues(EditorState other) {
@@ -48,6 +73,9 @@ public record EditorState(
                 && cropY == other.cropY
                 && cropWidth == other.cropWidth
                 && cropHeight == other.cropHeight
-                && Double.compare(exposure, other.exposure) == 0;
+                && Double.compare(exposure, other.exposure) == 0
+                && Double.compare(red, other.red) == 0
+                && Double.compare(green, other.green) == 0
+                && Double.compare(blue, other.blue) == 0;
     }
 }
