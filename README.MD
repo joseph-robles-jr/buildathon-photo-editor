@@ -1,6 +1,8 @@
 
 # README
 
+2nd place winner for the fall 2026 BYUI Buildathon. 
+
 This is a simple photo editor that handles exposure adjustments, RGB level changes, and a simple crop.
 
 AI was used to help handle null safety, JavaFX setup, and research with OpenCV and to clean up my code.
